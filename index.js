@@ -53,6 +53,7 @@ async function run() {
     try {
         const Servicedb = client.db("MidGenerationCoderDB").collection("Services");
         const Userdb = client.db("MidGenerationCoderDB").collection("Users");
+        const workdb = client.db("MidGenerationCoderDB").collection("work")
         const paymentInfodb = client
             .db("MidGenerationCoderDB")
             .collection("payments");
@@ -100,13 +101,60 @@ async function run() {
 
 
 
-         // ----servicedb-crud-operaiton-start
+        // ----servicedb-crud-operaiton-start
         app.get("/services", async (req, res) => {
             const result = await Servicedb.find().toArray();
 
             res.send(result);
         });
-       
+        app.delete("/services", async (req, res) => {
+            const qury = req?.query?.ID;
+            const find = { _id: new ObjectId(qury) }
+            const result = await Servicedb.deleteOne(find)
+
+            res.send(result);
+        });
+
+
+        app.post('/Addservice', async (req, res) => {
+            const obj = req.body;
+
+
+            const result = await Servicedb.insertOne(obj)
+
+            res.send(result);
+        })
+
+
+        app.get('/updateservice', async (req, res) => {
+            const id = req?.query?.ID;
+            const find = { _id: new ObjectId(id) }
+            const result = await Servicedb.findOne(find);
+
+            res.send(result);
+        })
+
+        app.put("/Updateservice", async (req, res) => {
+            const data = req?.body;
+            const id = req.query?.ID;
+            const find = { _id: new ObjectId(id) };
+
+            const updateDoc = {
+                $set: {
+                    "serviceName": data.serviceName,
+                    "servicePrice": data.servicePrice,
+                    "previousPrice": data.previousPrice,
+                    "serviceDiscount": data.serviceDiscount,
+                    "serviceTools": data.serviceTools,
+                },
+            };
+
+            const result = await Servicedb.updateOne(find, updateDoc);
+
+            res.send(result);
+        });
+
+
 
 
         // ----userdb-crud-operaiton-start
@@ -139,14 +187,6 @@ async function run() {
             res.send(result);
         });
 
-        app.get("/employee", async (req, res) => {
-            const filter = { verified: true };
-            const result = await Userdb.find(filter).toArray();
-            res.send(result);
-        });
-
-
-
 
         app.post("/user", async (req, res) => {
             const user = req?.body;
@@ -160,19 +200,19 @@ async function run() {
         });
 
         app.get("/users", async (req, res) => {
-            const result = await Userdb.find().toArray();
-            res.send(result);
-        });
+            const Role = req?.query?.Role;
 
 
-        app.get("/Profiledata", async (req, res) => {
-            const email = req?.query?.email;
-            const filter = { user_email: email };
-            const result = await Userdb.find(filter).toArray();
-            if (!result) {
-                return res.send([]);
+            const filter = {
+                $or: [
+                    { verified: true },
+                    { user_roll: Role }
+                ]
             }
-            res.send(result);
+
+            const result = await Userdb.find(filter).toArray();
+
+            res.send(result)
         });
 
         app.delete("/users", async (req, res) => {
@@ -225,6 +265,8 @@ async function run() {
         });
 
 
+
+
         // ---paymentInfodb-crud opearation start--
 
         app.post("/paymentInfo", async (req, res) => {
@@ -235,7 +277,7 @@ async function run() {
 
         app.get("/paymentInfo", async (req, res) => {
             const Email = req?.query?.email;
-            const filter = { payment_recieve_email: Email };
+            const filter = { "payment_recieve_email": Email };
 
             const result = await paymentInfodb.find(filter).toArray();
 
@@ -245,6 +287,16 @@ async function run() {
 
             res.send(result);
         });
+
+        app.get('/work', async (req, res) => {
+
+            const result = await workdb.find().toArray();
+            res.send(result);
+
+        })
+
+
+
 
         console.log(
             "Pinged your deployment. You successfully connected to MongoDB!"
